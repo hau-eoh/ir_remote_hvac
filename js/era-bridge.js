@@ -7,8 +7,19 @@ class EraBridge {
 
   sendToPin(pin, jsonContent) {
     const payload = typeof jsonContent === 'string' ? jsonContent : JSON.stringify(jsonContent);
-    const message = { type: 'control', pin: pin, value: payload };
-    window.parent.postMessage(JSON.stringify(message), '*');
+    
+    // Build both 'control' and 'write' messages with both 'type' and 'action' keys
+    const controlMsg = { type: 'control', action: 'control', pin: pin, value: payload };
+    const writeMsg = { type: 'write', action: 'write', pin: pin, value: payload };
+    
+    // 1. Send as raw JS objects (standard for modern dashboards)
+    window.parent.postMessage(controlMsg, '*');
+    window.parent.postMessage(writeMsg, '*');
+    
+    // 2. Send as stringified JSON strings (for legacy/obfuscated dashboard versions)
+    window.parent.postMessage(JSON.stringify(controlMsg), '*');
+    window.parent.postMessage(JSON.stringify(writeMsg), '*');
+    
     if (this.debugMode) console.log(`[ERA TX] ${pin}:`, jsonContent);
   }
 
