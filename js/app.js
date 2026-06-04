@@ -589,7 +589,8 @@
     const hvac = irData.IRhvac;
     if (!hvac) return;
 
-    console.log('[ERA REMOTE RX]', hvac);
+    console.log('[ERA REMOTE RX] Received HVAC remote state:', hvac);
+    console.log('Current local state before remote sync:', { ...state });
 
     // 1. Power
     if (hvac.Power !== undefined) {
@@ -633,6 +634,8 @@
         state.swing = s;
       }
     }
+
+    console.log('Local state after remote sync:', { ...state });
 
     // Save state and apply to UI
     saveState();
@@ -958,23 +961,56 @@
   }
 
   function applyStateToUI() {
-    $('#power-checkbox').checked = state.power;
-    document.getElementById('app').classList.toggle('power-off', !state.power);
-    $('#ac-status').textContent = state.power ? getModeLabel(state.mode) : 'Off';
+    console.log('applyStateToUI starting. State values to write:', { ...state });
+    
+    const powerCheckbox = $('#power-checkbox');
+    if (powerCheckbox) {
+      powerCheckbox.checked = state.power;
+      console.log('Power checkbox checked state set to:', state.power);
+    } else {
+      console.warn('Power checkbox element not found!');
+    }
 
-    $$('.mode-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.mode === state.mode);
+    const appEl = document.getElementById('app');
+    if (appEl) {
+      appEl.classList.toggle('power-off', !state.power);
+    } else {
+      console.warn('App container element not found!');
+    }
+
+    const acStatus = $('#ac-status');
+    if (acStatus) {
+      acStatus.textContent = state.power ? getModeLabel(state.mode) : 'Off';
+    }
+
+    const modeButtons = $$('.mode-btn');
+    console.log(`Setting active mode button for mode: ${state.mode}. Found ${modeButtons.length} mode buttons.`);
+    modeButtons.forEach(b => {
+      const isActive = (b.dataset.mode === state.mode);
+      b.classList.toggle('active', isActive);
+      if (isActive) console.log(`Highlighted mode button: ${b.dataset.mode}`);
     });
 
     updateDial();
+    console.log('Dial updated with temperature:', state.temperature);
 
-    $$('#fan-selector .pill-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.speed === state.fanSpeed);
+    const fanButtons = $$('#fan-selector .pill-btn');
+    console.log(`Setting active fan speed button for speed: ${state.fanSpeed}. Found ${fanButtons.length} fan buttons.`);
+    fanButtons.forEach(b => {
+      const isActive = (b.dataset.speed === state.fanSpeed);
+      b.classList.toggle('active', isActive);
+      if (isActive) console.log(`Highlighted fan speed button: ${b.dataset.speed}`);
     });
 
-    $$('#swing-selector .pill-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.swing === state.swing);
+    const swingButtons = $$('#swing-selector .pill-btn');
+    console.log(`Setting active swing button for swing: ${state.swing}. Found ${swingButtons.length} swing buttons.`);
+    swingButtons.forEach(b => {
+      const isActive = (b.dataset.swing === state.swing);
+      b.classList.toggle('active', isActive);
+      if (isActive) console.log(`Highlighted swing button: ${b.dataset.swing}`);
     });
+
+    console.log('applyStateToUI finished successfully.');
   }
 
   // ===== INIT =====
