@@ -260,16 +260,18 @@
     $$('.screen').forEach(s => s.classList.remove('active'));
     $(`#screen-${screenName}`).classList.add('active');
 
+    const settingsBtn = $('#btn-settings');
+
     if (screenName === 'control') {
       $('#btn-back').classList.add('hidden');
       $('#ac-title').textContent = 'Air Condition';
+      if (settingsBtn) settingsBtn.classList.remove('hidden');
     } else {
       $('#btn-back').classList.remove('hidden');
       $('#ac-title').textContent = screenName === 'setup' ? 'Setup' : 'Learn Commands';
+      if (settingsBtn) settingsBtn.classList.add('hidden');
     }
     saveState();
-    // Trigger auto scaler adjustment
-    setTimeout(adjustScale, 50);
   }
 
   // ===== CONTROL PANEL LOGIC =====
@@ -578,29 +580,7 @@
     applySetupStateToUI();
   }
 
-  function adjustScale() {
-    const app = $('#app');
-    const viewport = $('#app-viewport');
-    if (!app || !viewport) return;
 
-    const containerWidth = window.innerWidth;
-    const designWidth = 375; // Base responsive design width
-
-    if (containerWidth < designWidth) {
-      const scale = containerWidth / designWidth;
-      app.style.width = `${designWidth}px`;
-      app.style.transform = `scale(${scale})`;
-      app.style.transformOrigin = 'top center';
-      viewport.style.height = `${app.offsetHeight * scale}px`;
-      document.body.style.overflowX = 'hidden';
-    } else {
-      app.style.width = '';
-      app.style.transform = '';
-      app.style.transformOrigin = '';
-      viewport.style.height = '';
-      document.body.style.overflowX = '';
-    }
-  }
 
   const BRANDS = [
     "COOLIX", "DAIKIN", "PANASONIC", "MITSUBISHI", "TOSHIBA",
@@ -946,11 +926,6 @@
     initLearnWizard();
     applyStateToUI();
     applySetupStateToUI();
-
-    // Responsive auto scaler listeners
-    window.addEventListener('resize', adjustScale);
-    window.addEventListener('load', adjustScale);
-    setTimeout(adjustScale, 100);
 
     // Query gateway for current setup state on startup
     setTimeout(() => {
