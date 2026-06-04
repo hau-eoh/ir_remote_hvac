@@ -499,7 +499,11 @@
     // Listen to control pin for scan result updates from Gateway
     era.onPinUpdate(CONTROL_PIN, (value) => {
       if (value && value.IrReceived) {
-        onScanResultReceived(value.IrReceived);
+        if (state.currentScreen === 'setup' && state.setupSubScreen === 'scan' && scanSeconds > 0) {
+          onScanResultReceived(value.IrReceived);
+        } else {
+          onRemoteControlReceived(value.IrReceived);
+        }
       }
       // Also catch direct setup updates sent via V20X
       if (value && (value.vendor || value.Vendor)) {
@@ -578,6 +582,65 @@
 
     saveProfileSetupState();
     applySetupStateToUI();
+  }
+
+  function onRemoteControlReceived(irData) {
+    if (!irData) return;
+    const hvac = irData.IRhvac;
+    if (!hvac) return;
+
+    console.log('[ERA REMOTE RX]', hvac);
+
+    // 1. Power
+    if (hvac.Power !== undefined) {
+      const p = String(hvac.Power).toLowerCase();
+      state.power = (p === 'on');
+    }
+
+    // 2. Temperature
+    if (hvac.Temperature !== undefined) {
+      const t = parseInt(hvac.Temperature, 10);
+      if (!isNaN(t)) {
+        state.temperature = clamp(t, TEMP_MIN, TEMP_MAX);
+      }
+    }
+
+    // 3. Mode
+    if (hvac.Mode !== undefined) {
+      const m = String(hvac.Mode).toLowerCase();
+      if (['auto', 'cool', 'heat', 'dry', 'fan'].includes(m)) {
+        state.mode = m;
+      }
+    }
+
+    // 4. Fan Speed
+    if (hvac.FanSpeed !== undefined) {
+      const f = String(hvac.FanSpeed).toLowerCase();
+      if (f === 'auto') state.fanSpeed = 'auto';
+      else if (f === 'min') state.fanSpeed = 'min';
+      else if (f === 'low') state.fanSpeed = 'low';
+      else if (f === 'med' || f === 'medium') state.fanSpeed = 'medium';
+      else if (f === 'high') state.fanSpeed = 'high';
+      else if (f === 'max') state.fanSpeed = 'max';
+    }
+
+    // 5. Swing
+    if (hvac.SwingV !== undefined) {
+      const s = String(hvac.SwingV).toLowerCase();
+      if (s === 'auto' || s === 'animate') {
+        state.swing = 'auto';
+      } else if (['highest', 'high', 'middle', 'low', 'lowest', 'off'].includes(s)) {
+        state.swing = s;
+      }
+    }
+
+    // Save state and apply to UI
+    saveState();
+    applyStateToUI();
+
+    if (state.currentScreen === 'control') {
+      showToast(`Remote: ${state.power ? 'Bật' : 'Tắt'} | ${getModeLabel(state.mode)} | ${state.temperature}°C`, 'success');
+    }
   }
 
 
