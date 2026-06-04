@@ -32,6 +32,11 @@
     learnCurrentStep: 0,
     learnResults: {},
     learnCaptured: false,
+    // Setup Profile Information state
+    vendor: '—',
+    model: '',
+    setupMode: '—',
+    learnedCount: '—',
   };
 
   const DEFAULT_LEARN_STEPS = [
@@ -263,6 +268,8 @@
       $('#ac-title').textContent = screenName === 'setup' ? 'Setup' : 'Learn Commands';
     }
     saveState();
+    // Trigger auto scaler adjustment
+    setTimeout(adjustScale, 50);
   }
 
   // ===== CONTROL PANEL LOGIC =====
@@ -442,6 +449,17 @@
 
     $('#btn-test-pass').addEventListener('click', () => {
       sendLearn('save');
+      
+      // Update local profile info and UI
+      const vendor = $('#vendor-select').value;
+      const model = $('#model-select').value;
+      state.vendor = vendor;
+      state.model = model;
+      state.setupMode = 'Manual Select';
+      state.learnedCount = 'No';
+      saveProfileSetupState();
+      applySetupStateToUI();
+
       showToast('Configuration saved!', 'success');
       showScreen('control');
     });
@@ -450,12 +468,138 @@
       startLearnWizard();
     });
 
+    // Clear Setup Click Handler
+    const clearBtn = $('#btn-clear-setup');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (confirm('Bạn có chắc chắn muốn xóa cấu hình hiện tại để học/quét lại không?')) {
+          sendLearn('clear_all');
+          
+          state.vendor = '—';
+          state.model = '';
+          state.setupMode = '—';
+          state.learnedCount = '—';
+          saveProfileSetupState();
+          applySetupStateToUI();
+          
+          const vendorSelect = $('#vendor-select');
+          if (vendorSelect) {
+            vendorSelect.value = '';
+            const event = new Event('change');
+            vendorSelect.dispatchEvent(event);
+          }
+          
+          showToast('Đã xóa cấu hình thành công!', 'success');
+        }
+      });
+    }
+
     // Listen to control pin for scan result updates from Gateway
     era.onPinUpdate(CONTROL_PIN, (value) => {
       if (value && value.IrReceived) {
         onScanResultReceived(value.IrReceived);
       }
+      // Also catch direct setup updates sent via V20X
+      if (value && (value.vendor || value.Vendor)) {
+        onGatewaySetupReceived(value);
+      }
     });
+
+    // Listen to learn status pin for gateway setup updates
+    era.onPinUpdate(LEARN_PIN, (value) => {
+      if (value && (value.vendor || value.Vendor)) {
+        onGatewaySetupReceived(value);
+      }
+    });
+  }
+
+  function saveProfileSetupState() {
+    const data = {
+      vendor: state.vendor || '—',
+      model: state.model || '',
+      setupMode: state.setupMode || '—',
+      learnedCount: state.learnedCount !== undefined ? state.learnedCount : '—'
+    };
+    try {
+      localStorage.setItem(`era-ir-ac-setup-${PROFILE_INDEX}`, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function loadProfileSetupState() {
+    try {
+      const data = JSON.parse(localStorage.getItem(`era-ir-ac-setup-${PROFILE_INDEX}`));
+      if (data) {
+        state.vendor = data.vendor || '—';
+        state.model = data.model || '';
+        state.setupMode = data.setupMode || '—';
+        state.learnedCount = data.learnedCount !== undefined ? data.learnedCount : '—';
+      } else {
+        state.vendor = '—';
+        state.model = '';
+        state.setupMode = '—';
+        state.learnedCount = '—';
+      }
+    } catch (e) {
+      state.vendor = '—';
+      state.model = '';
+      state.setupMode = '—';
+      state.learnedCount = '—';
+    }
+  }
+
+  function applySetupStateToUI() {
+    const mode = state.setupMode || '—';
+    const vendor = state.vendor || '—';
+    const model = state.model || '';
+    const learned = state.learnedCount !== undefined ? state.learnedCount : '—';
+
+    const infoMode = $('#info-mode');
+    const infoVendor = $('#info-vendor');
+    const infoLearned = $('#info-learned');
+
+    if (infoMode) infoMode.textContent = mode;
+    if (infoVendor) infoVendor.textContent = model ? `${vendor} (Model ${model})` : vendor;
+    if (infoLearned) infoLearned.textContent = typeof learned === 'boolean' ? (learned ? 'Yes' : 'No') : String(learned);
+  }
+
+  function onGatewaySetupReceived(data) {
+    if (!data) return;
+    const vendor = data.vendor || data.Vendor || '—';
+    const model = data.model !== undefined && data.model !== null && data.model !== -1 ? String(data.model) : '';
+    const mode = data.mode || data.Mode || '—';
+    const learned = data.learned !== undefined ? data.learned : '—';
+
+    state.vendor = vendor;
+    state.model = model;
+    state.setupMode = mode;
+    state.learnedCount = learned;
+
+    saveProfileSetupState();
+    applySetupStateToUI();
+  }
+
+  function adjustScale() {
+    const app = $('#app');
+    const viewport = $('#app-viewport');
+    if (!app || !viewport) return;
+
+    const containerWidth = window.innerWidth;
+    const designWidth = 375; // Base responsive design width
+
+    if (containerWidth < designWidth) {
+      const scale = containerWidth / designWidth;
+      app.style.width = `${designWidth}px`;
+      app.style.transform = `scale(${scale})`;
+      app.style.transformOrigin = 'top center';
+      viewport.style.height = `${app.offsetHeight * scale}px`;
+      document.body.style.overflowX = 'hidden';
+    } else {
+      app.style.width = '';
+      app.style.transform = '';
+      app.style.transformOrigin = '';
+      viewport.style.height = '';
+      document.body.style.overflowX = '';
+    }
   }
 
   const BRANDS = [
@@ -540,6 +684,14 @@
       }
       updateTestLibraryBtn();
     }
+
+    // Save to state and update E-Ra profile info view
+    state.vendor = vendor;
+    state.model = model;
+    state.setupMode = 'Auto Scan';
+    state.learnedCount = 'No';
+    saveProfileSetupState();
+    applySetupStateToUI();
 
     showToast(`Scanned remote: ${vendor}`, 'success');
   }
@@ -703,6 +855,17 @@
 
     $('#btn-learn-save').addEventListener('click', () => {
       sendLearn('save');
+      
+      const doneCount = Object.values(state.learnResults).filter(v => v === 'done').length;
+      const total = state.learnSteps.length;
+      
+      state.vendor = 'Custom Remote';
+      state.model = '';
+      state.setupMode = 'Learn Commands';
+      state.learnedCount = `${doneCount}/${total}`;
+      saveProfileSetupState();
+      applySetupStateToUI();
+
       showToast('Setup saved!', 'success');
       showScreen('control');
     });
@@ -775,12 +938,24 @@
 
   function init() {
     loadState();
+    loadProfileSetupState();
     populateBrands();
     initDial();
     initControlPanel();
     initSetupWizard();
     initLearnWizard();
     applyStateToUI();
+    applySetupStateToUI();
+
+    // Responsive auto scaler listeners
+    window.addEventListener('resize', adjustScale);
+    window.addEventListener('load', adjustScale);
+    setTimeout(adjustScale, 100);
+
+    // Query gateway for current setup state on startup
+    setTimeout(() => {
+      sendLearn('query');
+    }, 1000);
 
     const profileNames = ['AC #1', 'AC #2', 'AC #3'];
     document.title = `${profileNames[PROFILE_INDEX] || 'AC'} — IR Control`;
