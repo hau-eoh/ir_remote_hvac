@@ -37,6 +37,7 @@
     model: '',
     setupMode: '—',
     learnedCount: '—',
+    debugModeEnabled: false,
   };
 
   const DEFAULT_LEARN_STEPS = [
@@ -537,6 +538,19 @@
         onGatewaySetupReceived(value);
       }
     });
+
+    // Handle Debug Mode Switch
+    const debugToggle = $('#debug-toggle-checkbox');
+    if (debugToggle) {
+      debugToggle.addEventListener('change', (e) => {
+        state.debugModeEnabled = e.target.checked;
+        const panel = $('#debug-panel');
+        if (panel) panel.classList.toggle('hidden', !state.debugModeEnabled);
+        try {
+          localStorage.setItem(`era-ir-ac-debug-${PROFILE_INDEX}`, state.debugModeEnabled);
+        } catch (err) {}
+      });
+    }
   }
 
   function saveProfileSetupState() {
@@ -977,6 +991,8 @@
         state.fanSpeed = data.fanSpeed || 'auto';
         state.swing = data.swing || 'auto';
       }
+      // Load debug panel preference
+      state.debugModeEnabled = localStorage.getItem(`era-ir-ac-debug-${PROFILE_INDEX}`) === 'true';
     } catch (e) {}
   }
 
@@ -1029,6 +1045,12 @@
       b.classList.toggle('active', isActive);
       if (isActive) console.log(`Highlighted swing button: ${b.dataset.swing}`);
     });
+
+    // Set debug toggle checkbox and visibility
+    const debugToggle = $('#debug-toggle-checkbox');
+    if (debugToggle) debugToggle.checked = state.debugModeEnabled;
+    const panel = $('#debug-panel');
+    if (panel) panel.classList.toggle('hidden', !state.debugModeEnabled);
 
     console.log('applyStateToUI finished successfully.');
   }

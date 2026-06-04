@@ -36,7 +36,11 @@
         </button>
         <label id="power-toggle" class="power-toggle" aria-label="Power toggle">
           <input type="checkbox" id="power-checkbox">
-          <span class="power-slider"></span>
+          <span class="power-btn-circle">
+            <svg class="power-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/>
+            </svg>
+          </span>
         </label>
       </div>
     </header>
@@ -174,7 +178,7 @@
       </div>
 
       <!-- Temporary Debug Panel -->
-      <div class="control-section" id="debug-panel" style="margin-top: 20px; padding: 12px; border-radius: var(--radius-md); border: 1px dashed rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); font-family: monospace; font-size: 11px; color: #34D399; overflow-x: auto; word-break: break-all; max-height: 180px;">
+      <div class="control-section hidden" id="debug-panel" style="margin-top: 20px; padding: 12px; border-radius: var(--radius-md); border: 1px dashed rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); font-family: monospace; font-size: 11px; color: #34D399; overflow-x: auto; word-break: break-all; max-height: 180px;">
         <h2 class="section-label" style="color: var(--text-2); font-size: 10px; margin-bottom: 6px;">DEBUG RAW RECEIVED DATA</h2>
         <div id="debug-rx-pin" style="color: var(--accent); margin-bottom: 4px; font-weight: bold;">Pin: Waiting...</div>
         <pre id="debug-rx-val" style="margin: 0; white-space: pre-wrap;">No data received yet</pre>
@@ -224,6 +228,23 @@
             <h3>Learn Commands</h3>
             <p>Dạy từng nút từ remote của bạn</p>
           </div>
+        </div>
+
+        <div class="setup-card" id="btn-toggle-debug-panel" style="cursor: default;">
+          <div class="setup-card-icon" style="background: rgba(34, 211, 238, 0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: var(--radius-md); flex-shrink: 0;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M16 18l6-6-6-6M8 6L2 12l6 6M12 2v20" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="setup-card-text" style="flex: 1;">
+            <h3>Debug Mode</h3>
+            <p>Hiển thị bảng dữ liệu thô nhận được</p>
+          </div>
+          <!-- Tiny switch slider -->
+          <label class="debug-switch" style="position: relative; display: inline-block; width: 44px; height: 24px; margin-left: auto;">
+            <input type="checkbox" id="debug-toggle-checkbox">
+            <span class="debug-slider"></span>
+          </label>
         </div>
 
         <!-- Profile Info -->

@@ -102,43 +102,96 @@ body {
 
 /* 3. Power Toggle */
 .power-toggle {
-  width: 52px;
-  height: 28px;
+  display: block;
+  width: 36px;
+  height: 36px;
 }
 
 .power-toggle input[type="checkbox"] {
   display: none;
 }
 
-.power-slider {
-  width: 52px;
-  height: 28px;
-  background: #334155;
+.power-btn-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
   border-radius: var(--radius-full);
-  position: relative;
-  transition: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #EF4444;
   cursor: pointer;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.1);
 }
 
-.power-slider::before {
-  content: '';
+.power-btn-circle .power-icon {
+  width: 18px;
+  height: 18px;
+  transition: transform 300ms ease;
+}
+
+#power-checkbox:checked + .power-btn-circle {
+  background: rgba(34, 211, 238, 0.15);
+  border-color: rgba(34, 211, 238, 0.5);
+  color: var(--accent);
+  box-shadow: var(--accent-glow);
+  animation: powerPulse 2s infinite;
+}
+
+#power-checkbox:checked + .power-btn-circle .power-icon {
+  transform: rotate(90deg);
+}
+
+@keyframes powerPulse {
+  0% { box-shadow: 0 0 8px rgba(34, 211, 238, 0.2); }
+  50% { box-shadow: 0 0 16px rgba(34, 211, 238, 0.5); }
+  100% { box-shadow: 0 0 8px rgba(34, 211, 238, 0.2); }
+}
+
+/* Debug Switch inside settings card */
+.debug-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.debug-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.debug-slider {
   position: absolute;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  left: 3px;
-  top: 3px;
-  transition: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  inset: 0;
+  background-color: #334155;
+  transition: 300ms ease;
+  border-radius: 24px;
 }
 
-#power-checkbox:checked + .power-slider {
-  background: var(--accent);
+.debug-slider::before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 300ms ease;
+  border-radius: 50%;
+}
+
+#debug-toggle-checkbox:checked + .debug-slider {
+  background-color: var(--accent);
   box-shadow: var(--accent-glow);
 }
 
-#power-checkbox:checked + .power-slider::before {
-  transform: translateX(24px);
+#debug-toggle-checkbox:checked + .debug-slider::before {
+  transform: translateX(20px);
 }
 
 /* 4. Screen Management */
