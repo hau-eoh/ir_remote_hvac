@@ -18,6 +18,12 @@ class EraBridge {
     } else {
       window.addEventListener('message', (e) => this._onMessage(e));
     }
+
+    // Deduplication tracking variables
+    this.lastControlTime = null;
+    this.lastControlRawString = null;
+    this.lastLearnTime = null;
+    this.lastLearnRawString = null;
   }
 
   initEraWidget() {
@@ -47,40 +53,61 @@ class EraBridge {
   }
 
   mapConfigsAndActions() {
+    // Helper to extract virtual pin string
+    const getPinStr = (c) => (c.virtualPin || c.virtual_pin || c.pin || c.virtualpin || '').toLowerCase();
+
     // 1. Map Control Config (to read status feedback)
     this.controlConfig = this.configs.find(c => {
       const name = (c.name || '').toLowerCase();
-      return name.includes('control') || name.includes('điều khiển') || name.includes(this.controlPin.toLowerCase());
+      const pin = getPinStr(c);
+      return name.includes('control') || name.includes('điều khiển') || name.includes(this.controlPin.toLowerCase()) || pin === this.controlPin.toLowerCase();
     });
     if (!this.controlConfig && this.configs.length > 0) {
-      this.controlConfig = this.configs[0];
+      // Find a config that matches the control pin exactly
+      this.controlConfig = this.configs.find(c => getPinStr(c) === this.controlPin.toLowerCase());
+      if (!this.controlConfig) {
+        this.controlConfig = this.configs[0];
+      }
     }
 
     // 2. Map Learn Config (to read learn updates)
     this.learnConfig = this.configs.find(c => {
       const name = (c.name || '').toLowerCase();
-      return name.includes('learn') || name.includes('học') || name.includes(this.learnPin.toLowerCase());
+      const pin = getPinStr(c);
+      return name.includes('learn') || name.includes('học') || name.includes(this.learnPin.toLowerCase()) || pin === this.learnPin.toLowerCase();
     });
     if (!this.learnConfig && this.configs.length > 1) {
-      this.learnConfig = this.configs[1];
+      // Find a config that matches the learn pin exactly
+      this.learnConfig = this.configs.find(c => getPinStr(c) === this.learnPin.toLowerCase());
+      if (!this.learnConfig) {
+        this.learnConfig = this.configs[1];
+      }
     }
 
     // 3. Map Control Action (to send commands)
     this.controlAction = this.actions.find(a => {
       const name = (a.name || '').toLowerCase();
-      return name.includes('control') || name.includes('điều khiển') || name.includes(this.controlPin.toLowerCase());
+      const pin = getPinStr(a);
+      return name.includes('control') || name.includes('điều khiển') || name.includes(this.controlPin.toLowerCase()) || pin === this.controlPin.toLowerCase();
     });
     if (!this.controlAction && this.actions.length > 0) {
-      this.controlAction = this.actions[0];
+      this.controlAction = this.actions.find(a => getPinStr(a) === this.controlPin.toLowerCase());
+      if (!this.controlAction) {
+        this.controlAction = this.actions[0];
+      }
     }
 
     // 4. Map Learn Action (to send learning requests)
     this.learnAction = this.actions.find(a => {
       const name = (a.name || '').toLowerCase();
-      return name.includes('learn') || name.includes('học') || name.includes(this.learnPin.toLowerCase());
+      const pin = getPinStr(a);
+      return name.includes('learn') || name.includes('học') || name.includes(this.learnPin.toLowerCase()) || pin === this.learnPin.toLowerCase();
     });
     if (!this.learnAction && this.actions.length > 1) {
-      this.learnAction = this.actions[1];
+      this.learnAction = this.actions.find(a => getPinStr(a) === this.learnPin.toLowerCase());
+      if (!this.learnAction) {
+        this.learnAction = this.actions[1];
+      }
     }
   }
 
@@ -88,23 +115,45 @@ class EraBridge {
     try {
       // If control config value is received from E-Ra
       if (this.controlConfig && values[this.controlConfig.id] !== undefined) {
-        // E-Ra sends live updates in '.v' field instead of '.value' in production.
         const rawVal = values[this.controlConfig.id];
-        let val = rawVal.value !== undefined ? rawVal.value : rawVal.v;
-        if (typeof val === 'string') {
-          try { val = JSON.parse(val); } catch(e) {}
+        const valTime = rawVal.time;
+        const rawString = rawVal.value !== undefined ? rawVal.value : rawVal.v;
+        
+        // Deduplicate: process only if time stamp or raw value has changed
+        if (valTime !== this.lastControlTime || rawString !== this.lastControlRawString) {
+          this.lastControlTime = valTime;
+          this.lastControlRawString = rawString;
+
+          let val = rawString;
+          if (typeof val === 'string') {
+            try { val = JSON.parse(val); } catch(e) {}
+          }
+          
+          // Emit only if it contains a valid AC JSON structure
+          // Or if it is not an object (fallback checks)
+          if (val && (typeof val !== 'object' || val.IrReceived || val.command || val.Vendor || val.vendor)) {
+            this._emit(this.controlPin, val);
+          }
         }
-        this._emit(this.controlPin, val);
       }
       
       // If learn config value is received from E-Ra
       if (this.learnConfig && values[this.learnConfig.id] !== undefined) {
         const rawVal = values[this.learnConfig.id];
-        let val = rawVal.value !== undefined ? rawVal.value : rawVal.v;
-        if (typeof val === 'string') {
-          try { val = JSON.parse(val); } catch(e) {}
+        const valTime = rawVal.time;
+        const rawString = rawVal.value !== undefined ? rawVal.value : rawVal.v;
+
+        // Deduplicate: process only if time stamp or raw value has changed
+        if (valTime !== this.lastLearnTime || rawString !== this.lastLearnRawString) {
+          this.lastLearnTime = valTime;
+          this.lastLearnRawString = rawString;
+
+          let val = rawString;
+          if (typeof val === 'string') {
+            try { val = JSON.parse(val); } catch(e) {}
+          }
+          this._emit(this.learnPin, val);
         }
-        this._emit(this.learnPin, val);
       }
     } catch (e) {
       console.error('[ERA WIDGET VALUES ERROR]', e);
