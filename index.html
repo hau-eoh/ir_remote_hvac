@@ -170,10 +170,15 @@
           </button>
           <button class="pill-btn" data-swing="lowest">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18h16"/><path d="M12 14v4"/></svg>
-          </button>
         </div>
       </div>
 
+      <!-- Temporary Debug Panel -->
+      <div class="control-section" id="debug-panel" style="margin-top: 20px; padding: 12px; border-radius: var(--radius-md); border: 1px dashed rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); font-family: monospace; font-size: 11px; color: #34D399; overflow-x: auto; word-break: break-all; max-height: 180px;">
+        <h2 class="section-label" style="color: var(--text-2); font-size: 10px; margin-bottom: 6px;">DEBUG RAW RECEIVED DATA</h2>
+        <div id="debug-rx-pin" style="color: var(--accent); margin-bottom: 4px; font-weight: bold;">Pin: Waiting...</div>
+        <pre id="debug-rx-val" style="margin: 0; white-space: pre-wrap;">No data received yet</pre>
+      </div>
 
     </section>
 

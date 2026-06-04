@@ -502,6 +502,14 @@
 
     // Listen to control pin for scan result updates from Gateway
     era.onPinUpdate(CONTROL_PIN, (value) => {
+      // Update UI debug panel
+      const debugPin = $('#debug-rx-pin');
+      const debugVal = $('#debug-rx-val');
+      if (debugPin) debugPin.textContent = `Pin: ${CONTROL_PIN} (Control) - Time: ${new Date().toLocaleTimeString()}`;
+      if (debugVal) {
+        debugVal.textContent = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+      }
+
       if (value && value.IrReceived) {
         if (state.currentScreen === 'setup' && state.setupSubScreen === 'scan' && scanSeconds > 0) {
           onScanResultReceived(value.IrReceived);
@@ -517,6 +525,14 @@
 
     // Listen to learn status pin for gateway setup updates
     era.onPinUpdate(LEARN_PIN, (value) => {
+      // Update UI debug panel
+      const debugPin = $('#debug-rx-pin');
+      const debugVal = $('#debug-rx-val');
+      if (debugPin) debugPin.textContent = `Pin: ${LEARN_PIN} (Learn) - Time: ${new Date().toLocaleTimeString()}`;
+      if (debugVal) {
+        debugVal.textContent = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+      }
+
       if (value && (value.vendor || value.Vendor)) {
         onGatewaySetupReceived(value);
       }
