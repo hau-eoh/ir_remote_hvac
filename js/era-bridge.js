@@ -105,32 +105,40 @@ class EraBridge {
   }
 
   sendToPin(pin, jsonContent) {
-    const payload = typeof jsonContent === 'string' ? jsonContent : JSON.stringify(jsonContent);
+    const payloadStr = typeof jsonContent === 'string' ? jsonContent : JSON.stringify(jsonContent);
+    const payloadObj = typeof jsonContent === 'string' ? JSON.parse(jsonContent) : jsonContent;
 
-    // E-Ra official Widget Mode
+    // 1. E-Ra official Widget Mode (triggerAction)
     if (this.isEraWidget) {
+      // We wrap the command inside the 'value' field.
+      // If E-Ra extracts '.value' to write, it gets the entire nested object.
+      // We also spread the flat values for dashboard configuration compatibility.
+      const actionData = {
+        value: payloadStr,
+        command: payloadObj.command || '',
+        cmdValue: payloadObj.value !== undefined ? payloadObj.value : ''
+      };
+
       if (pin === this.controlPin && this.controlAction) {
-        window.eraWidget.triggerAction(this.controlAction.action, null, payload);
-        if (this.debugMode) console.log(`[ERA WIDGET TX] ${pin} (Action: ${this.controlAction.action}):`, jsonContent);
-        return;
-      }
-      if (pin === this.learnPin && this.learnAction) {
-        window.eraWidget.triggerAction(this.learnAction.action, null, payload);
-        if (this.debugMode) console.log(`[ERA WIDGET TX] ${pin} (Action: ${this.learnAction.action}):`, jsonContent);
-        return;
+        window.eraWidget.triggerAction(this.controlAction.action, null, actionData);
+        if (this.debugMode) console.log(`[ERA WIDGET TX] ${pin} (Action: ${this.controlAction.action}):`, actionData);
+      } else if (pin === this.learnPin && this.learnAction) {
+        window.eraWidget.triggerAction(this.learnAction.action, null, actionData);
+        if (this.debugMode) console.log(`[ERA WIDGET TX] ${pin} (Action: ${this.learnAction.action}):`, actionData);
       }
     }
 
-    // FALLBACK / Standalone Mode (Direct postMessage)
-    const controlMsg = { type: 'control', action: 'control', pin: pin, value: payload };
-    const writeMsg = { type: 'write', action: 'write', pin: pin, value: payload };
+    // 2. Direct postMessage Mode (Runs concurrently)
+    // This bypasses Action mapping and writes the full raw JSON string directly to the Virtual Pin
+    const controlMsg = { type: 'control', action: 'control', pin: pin, value: payloadStr };
+    const writeMsg = { type: 'write', action: 'write', pin: pin, value: payloadStr };
     
     window.parent.postMessage(controlMsg, '*');
     window.parent.postMessage(writeMsg, '*');
     window.parent.postMessage(JSON.stringify(controlMsg), '*');
     window.parent.postMessage(JSON.stringify(writeMsg), '*');
     
-    if (this.debugMode) console.log(`[ERA FALLBACK TX] ${pin}:`, jsonContent);
+    if (this.debugMode) console.log(`[ERA DIRECT TX] ${pin}:`, payloadStr);
   }
 
   _onMessage(event) {
