@@ -85,25 +85,29 @@ class EraBridge {
   }
 
   _handleEraWidgetValues(values) {
-    // If control config value is received from E-Ra
-    if (this.controlConfig && values[this.controlConfig.id] !== undefined) {
-      // E-Ra sends live updates in '.v' field instead of '.value' in production.
-      const rawVal = values[this.controlConfig.id];
-      let val = rawVal.value !== undefined ? rawVal.value : rawVal.v;
-      if (typeof val === 'string') {
-        try { val = JSON.parse(val); } catch(e) {}
+    try {
+      // If control config value is received from E-Ra
+      if (this.controlConfig && values[this.controlConfig.id] !== undefined) {
+        // E-Ra sends live updates in '.v' field instead of '.value' in production.
+        const rawVal = values[this.controlConfig.id];
+        let val = rawVal.value !== undefined ? rawVal.value : rawVal.v;
+        if (typeof val === 'string') {
+          try { val = JSON.parse(val); } catch(e) {}
+        }
+        this._emit(this.controlPin, val);
       }
-      this._emit(this.controlPin, val);
-    }
-    
-    // If learn config value is received from E-Ra
-    if (this.learnConfig && values[this.learnConfig.id] !== undefined) {
-      const rawVal = values[this.learnConfig.id];
-      let val = rawVal.value !== undefined ? rawVal.value : rawVal.v;
-      if (typeof val === 'string') {
-        try { val = JSON.parse(val); } catch(e) {}
+      
+      // If learn config value is received from E-Ra
+      if (this.learnConfig && values[this.learnConfig.id] !== undefined) {
+        const rawVal = values[this.learnConfig.id];
+        let val = rawVal.value !== undefined ? rawVal.value : rawVal.v;
+        if (typeof val === 'string') {
+          try { val = JSON.parse(val); } catch(e) {}
+        }
+        this._emit(this.learnPin, val);
       }
-      this._emit(this.learnPin, val);
+    } catch (e) {
+      console.error('[ERA WIDGET VALUES ERROR]', e);
     }
   }
 
@@ -155,7 +159,9 @@ class EraBridge {
         }
         this._emit(data.pin, value);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('[ERA RX ERROR]', e);
+    }
   }
 
   onPinUpdate(pin, callback) {

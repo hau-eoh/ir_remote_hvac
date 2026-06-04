@@ -79,6 +79,10 @@
     return Math.round(Math.min(TEMP_MAX, Math.max(TEMP_MIN, TEMP_MIN + ratio * (TEMP_MAX - TEMP_MIN))));
   }
 
+  function clamp(val, min, max) {
+    return Math.min(max, Math.max(min, val));
+  }
+
   // ===== TOAST SYSTEM =====
 
   function showToast(message, type = 'info', duration = 2500) {
