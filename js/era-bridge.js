@@ -87,7 +87,9 @@ class EraBridge {
   _handleEraWidgetValues(values) {
     // If control config value is received from E-Ra
     if (this.controlConfig && values[this.controlConfig.id] !== undefined) {
-      let val = values[this.controlConfig.id].value;
+      // E-Ra sends live updates in '.v' field instead of '.value' in production.
+      const rawVal = values[this.controlConfig.id];
+      let val = rawVal.value !== undefined ? rawVal.value : rawVal.v;
       if (typeof val === 'string') {
         try { val = JSON.parse(val); } catch(e) {}
       }
@@ -96,7 +98,8 @@ class EraBridge {
     
     // If learn config value is received from E-Ra
     if (this.learnConfig && values[this.learnConfig.id] !== undefined) {
-      let val = values[this.learnConfig.id].value;
+      const rawVal = values[this.learnConfig.id];
+      let val = rawVal.value !== undefined ? rawVal.value : rawVal.v;
       if (typeof val === 'string') {
         try { val = JSON.parse(val); } catch(e) {}
       }
@@ -145,8 +148,8 @@ class EraBridge {
     try {
       const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
       if (data && data.pin) {
-        if (this.debugMode) console.log(`[ERA RX] ${data.pin}:`, data.value);
-        let value = data.value;
+        let value = data.value !== undefined ? data.value : data.v;
+        if (this.debugMode) console.log(`[ERA RX] ${data.pin}:`, value);
         if (typeof value === 'string') {
           try { value = JSON.parse(value); } catch(e) {}
         }
