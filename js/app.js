@@ -449,12 +449,99 @@
     $('#btn-test-fail').addEventListener('click', () => {
       startLearnWizard();
     });
+
+    // Listen to control pin for scan result updates from Gateway
+    era.onPinUpdate(CONTROL_PIN, (value) => {
+      if (value && value.IrReceived) {
+        onScanResultReceived(value.IrReceived);
+      }
+    });
+  }
+
+  const BRANDS = [
+    "COOLIX", "DAIKIN", "PANASONIC", "MITSUBISHI", "TOSHIBA",
+    "LG", "SAMSUNG", "SHARP", "CARRIER", "GREE",
+    "MIDEA", "FUJITSU", "HITACHI", "HAIER", "SANYO"
+  ];
+
+  function populateBrands() {
+    const select = $('#vendor-select');
+    if (select) {
+      select.innerHTML = '<option value="">— Select vendor —</option>';
+      BRANDS.forEach(brand => {
+        select.innerHTML += `<option value="${brand}">${brand}</option>`;
+      });
+    }
   }
 
   function updateTestLibraryBtn() {
     const vendor = $('#vendor-select').value;
     const model = $('#model-select').value;
     $('#btn-test-library').disabled = !(vendor && model);
+  }
+
+  function onScanResultReceived(irData) {
+    if (!irData) return;
+    
+    // Stop the scan timer
+    stopScan();
+    
+    const hvac = irData.IRhvac || {};
+    const vendor = hvac.Vendor || irData.Protocol || '';
+    let model = hvac.Model;
+    if (model === -1 || model === undefined || model === null) {
+      model = '1'; // Default fallback model
+    } else {
+      model = String(model);
+    }
+
+    const scanResult = $('#scan-result');
+    const btnCancel = $('#btn-scan-cancel');
+    const btnRetry = $('#btn-scan-retry');
+    const btnContinue = $('#btn-scan-continue');
+
+    // Display scanned remote info
+    scanResult.innerHTML = `Tìm thấy Remote!<br><strong>Hãng:</strong> ${vendor}<br><strong>Model:</strong> ${model}`;
+    scanResult.classList.remove('hidden');
+    scanResult.style.color = 'var(--success)';
+    
+    btnCancel.classList.add('hidden');
+    btnRetry.classList.remove('hidden');
+    btnContinue.classList.remove('hidden');
+
+    // Auto-populate manual brand/model selection
+    const vendorSelect = $('#vendor-select');
+    if (vendorSelect) {
+      const normalizedVendor = vendor.toUpperCase();
+      let exists = false;
+      for (let i = 0; i < vendorSelect.options.length; i++) {
+        if (vendorSelect.options[i].value.toUpperCase() === normalizedVendor) {
+          vendorSelect.selectedIndex = i;
+          exists = true;
+          break;
+        }
+      }
+      if (!exists) {
+        vendorSelect.innerHTML += `<option value="${vendor}">${vendor}</option>`;
+        vendorSelect.value = vendor;
+      }
+      
+      // Dispatch change event to model dropdown
+      const event = new Event('change');
+      vendorSelect.dispatchEvent(event);
+      
+      const modelSelect = $('#model-select');
+      if (modelSelect) {
+        modelSelect.value = model;
+        if (!modelSelect.value) {
+          modelSelect.innerHTML += `<option value="${model}">${model}</option>`;
+          modelSelect.value = model;
+        }
+      }
+      updateTestLibraryBtn();
+    }
+
+    showToast(`Scanned remote: ${vendor}`, 'success');
   }
 
   function startScan() {
@@ -688,6 +775,7 @@
 
   function init() {
     loadState();
+    populateBrands();
     initDial();
     initControlPanel();
     initSetupWizard();
