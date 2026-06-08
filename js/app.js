@@ -440,8 +440,19 @@
           temp_24: { command: 'temperature', value: 24 },
           power_off: { command: 'power', value: 'off' },
         };
-        const cmd = commands[testKey];
-        if (cmd) {
+        const cmd = { ...commands[testKey] };
+        
+        // Include selected vendor and model to test unsaved manual configuration on Gateway
+        const vendor = $('#vendor-select').value;
+        const model = $('#model-select').value;
+        if (vendor) {
+          cmd.Vendor = vendor;
+        }
+        if (model) {
+          cmd.Model = parseInt(model, 10);
+        }
+
+        if (cmd.command) {
           era.sendToPin(CONTROL_PIN, cmd);
           btn.textContent = '✓ Sent';
           btn.disabled = true;
