@@ -456,6 +456,7 @@
 
     $('#btn-test-pass').addEventListener('click', () => {
       sendLearn('save');
+      era.sendToPin(CONTROL_PIN, { command: 'save_config' });
       
       // Update local profile info and UI
       const vendor = $('#vendor-select').value;
