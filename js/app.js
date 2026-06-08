@@ -456,11 +456,20 @@
 
     $('#btn-test-pass').addEventListener('click', () => {
       sendLearn('save');
-      era.sendToPin(CONTROL_PIN, { command: 'save_config' });
       
-      // Update local profile info and UI
       const vendor = $('#vendor-select').value;
       const model = $('#model-select').value;
+      
+      const payload = { command: 'save_config' };
+      if (vendor) {
+        payload.vendor = vendor;
+      }
+      if (model) {
+        payload.model = parseInt(model, 10);
+      }
+      era.sendToPin(CONTROL_PIN, payload);
+      
+      // Update local profile info and UI
       state.vendor = vendor;
       state.model = model;
       state.setupMode = 'Manual Select';
