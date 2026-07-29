@@ -28,6 +28,10 @@ class EraBridge {
 
   initEraWidget() {
     window.eraWidget.init({
+      // E-Ra defaults to 300px on mobile. Send the actual viewport height
+      // when the widget is made ready so the host creates a full-height iframe.
+      ready: false,
+      mobileHeight: this.getMobileHeight(),
       needRealtimeConfigs: true,
       needHistoryConfigs: false,
       needActions: true,
@@ -50,6 +54,26 @@ class EraBridge {
         this._handleEraWidgetValues(values);
       }
     });
+
+    window.eraWidget.ready();
+    this.requestMobileHeight();
+    window.addEventListener('resize', () => this.requestMobileHeight());
+    window.visualViewport?.addEventListener('resize', () => this.requestMobileHeight());
+  }
+
+  getMobileHeight() {
+    // The iframe itself starts at E-Ra's default 300px, so innerHeight and
+    // visualViewport only report that clipped height. screen.height reports
+    // the device viewport and lets the host expand the iframe to full screen.
+    return Math.round(Math.max(
+      window.screen?.height || 0,
+      window.visualViewport?.height || 0,
+      window.innerHeight
+    ));
+  }
+
+  requestMobileHeight() {
+    window.eraWidget.requestAdjustMobileHeight(this.getMobileHeight());
   }
 
   mapConfigsAndActions() {
